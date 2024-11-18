@@ -51,25 +51,27 @@ pub fn create_database_entry(
         "properties": properties,
     });
 
-    client
+    let response = client
         .inner
         .post(&path)
         .set_default_headers()
         .set_authorization_header(&client.api_key)
-        .send_json(body)
-        .map_err(api_client_error)
+        .send_json(body)?;
+
+    Ok(response)
 }
 
 pub fn query_database_properties(client: &Client, database_id: &str) -> Result<Response> {
     let path = format!("{}/databases/{}", &client.base_url, database_id);
 
-    client
+    let response = client
         .inner
         .get(&path)
         .set_default_headers()
         .set_authorization_header(&client.api_key)
-        .call()
-        .map_err(api_client_error)
+        .call()?;
+
+    Ok(response)
 }
 
 pub fn query_database(client: &Client, parameters: QueryDatabaseParameters) -> Result<Response> {
@@ -102,13 +104,14 @@ pub fn query_database(client: &Client, parameters: QueryDatabaseParameters) -> R
         body["filter"] = filter;
     }
 
-    client
+    let response = client
         .inner
         .post(&path)
         .set_default_headers()
         .set_authorization_header(&client.api_key)
-        .send_json(body)
-        .map_err(api_client_error)
+        .send_json(body)?;
+
+    Ok(response)
 }
 
 pub fn send_with_retries<F, S>(parameters: RetryParameters<S>, f: F) -> Result<Response>
@@ -174,44 +177,14 @@ pub fn update_database_entry(
     let path = format!("{}/pages/{}", &client.base_url, entry_id);
     let body = serde_json::json!({"properties": properties});
 
-    client
+    let response = client
         .inner
         .patch(&path)
         .set_default_headers()
         .set_authorization_header(&client.api_key)
-        .send_json(body)
-        .map_err(api_client_error)
-}
+        .send_json(body)?;
 
-// Integrations should accommodate variable rate limits by handling HTTP 429 responses
-// and respecting the Retry-After response header value,
-// which is set as an integer number of seconds (in decimal).
-// See more for details https://developers.notion.com/reference/request-limits
-fn api_client_error(err: ureq::Error) -> Error {
-    match err {
-        ureq::Error::Transport(err) => Error::Transport(err.to_string()),
-        ureq::Error::Status(429, response) => {
-            let retry_after = response.header("Retry-After").unwrap_or_else(|| {
-                tracing::warn!(
-                    "Notion API response returned 429 status code without Retry-After header"
-                );
-
-                "1.0"
-            });
-
-            let seconds = retry_after.parse::<f64>().unwrap_or_else (|_value| {
-                tracing::warn!("Notion API response returned 429 status code with invalid Retry-After header: {}", retry_after);
-
-                1.0
-            });
-
-            let duration = Duration::from_secs_f64(seconds);
-            tracing::warn!("Notion API request rate limited for {:?}", duration);
-
-            Error::RateLimit(duration)
-        }
-        ureq::Error::Status(code, _) => Error::Status(code),
-    }
+    Ok(response)
 }
 
 #[cfg(test)]
