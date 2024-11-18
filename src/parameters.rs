@@ -6,7 +6,7 @@ pub struct CreateDatabaseEntryParameters<'a> {
     pub properties: Json,
 }
 
-pub struct NotionApiClientParameters {
+pub struct ClientParameters {
     pub api_key: String,
     pub base_url_override: Option<String>,
 }

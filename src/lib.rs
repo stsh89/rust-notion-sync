@@ -18,8 +18,8 @@ pub struct Client {
 }
 
 impl Client {
-    pub fn new(parameters: NotionApiClientParameters) -> Self {
-        let NotionApiClientParameters {
+    pub fn new(parameters: ClientParameters) -> Self {
+        let ClientParameters {
             api_key,
             base_url_override,
         } = parameters;
@@ -249,7 +249,7 @@ mod tests {
             then.status(200);
         });
 
-        let client = Client::new(NotionApiClientParameters {
+        let client = Client::new(ClientParameters {
             base_url_override: Some(base_url),
             api_key: "test_api_key".to_string(),
         });
@@ -284,7 +284,7 @@ mod tests {
             then.status(200);
         });
 
-        let client = Client::new(NotionApiClientParameters {
+        let client = Client::new(ClientParameters {
             base_url_override: Some(base_url),
             api_key: "test_api_key".to_string(),
         });
@@ -313,7 +313,7 @@ mod tests {
             then.status(200);
         });
 
-        let client = Client::new(NotionApiClientParameters {
+        let client = Client::new(ClientParameters {
             base_url_override: Some(base_url),
             api_key: "test_api_key".to_string(),
         });
@@ -354,7 +354,7 @@ mod tests {
             then.status(200);
         });
 
-        let client = Client::new(NotionApiClientParameters {
+        let client = Client::new(ClientParameters {
             base_url_override: Some(base_url),
             api_key: "test_api_key".to_string(),
         });
