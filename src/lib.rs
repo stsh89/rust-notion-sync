@@ -6,18 +6,18 @@ use headers::{SetAuthorizationHeader, SetDefaultHeaders};
 use std::{num::NonZeroU32, thread, time::Duration};
 use ureq::{Agent, AgentBuilder, Response};
 
-pub use failure::Error as NotionApiClientError;
+pub use failure::*;
 pub use parameters::*;
 
-pub type NotionApiClientResult<T> = std::result::Result<T, NotionApiClientError>;
+pub type Result<T> = std::result::Result<T, Error>;
 
-pub struct NotionApiClient {
+pub struct Client {
     inner: Agent,
     base_url: String,
     api_key: String,
 }
 
-impl NotionApiClient {
+impl Client {
     pub fn new(parameters: NotionApiClientParameters) -> Self {
         let NotionApiClientParameters {
             api_key,
@@ -36,9 +36,9 @@ impl NotionApiClient {
 }
 
 pub fn create_database_entry(
-    client: &NotionApiClient,
+    client: &Client,
     parameters: CreateDatabaseEntryParameters,
-) -> NotionApiClientResult<Response> {
+) -> Result<Response> {
     let CreateDatabaseEntryParameters {
         database_id,
         properties,
@@ -60,10 +60,7 @@ pub fn create_database_entry(
         .map_err(api_client_error)
 }
 
-pub fn query_database_properties(
-    client: &NotionApiClient,
-    database_id: &str,
-) -> NotionApiClientResult<Response> {
+pub fn query_database_properties(client: &Client, database_id: &str) -> Result<Response> {
     let path = format!("{}/databases/{}", &client.base_url, database_id);
 
     client
@@ -75,10 +72,7 @@ pub fn query_database_properties(
         .map_err(api_client_error)
 }
 
-pub fn query_database(
-    client: &NotionApiClient,
-    parameters: QueryDatabaseParameters,
-) -> NotionApiClientResult<Response> {
+pub fn query_database(client: &Client, parameters: QueryDatabaseParameters) -> Result<Response> {
     let QueryDatabaseParameters {
         database_id,
         start_cursor,
@@ -117,12 +111,9 @@ pub fn query_database(
         .map_err(api_client_error)
 }
 
-pub fn send_with_retries<F, S>(
-    parameters: RetryParameters<S>,
-    f: F,
-) -> NotionApiClientResult<Response>
+pub fn send_with_retries<F, S>(parameters: RetryParameters<S>, f: F) -> Result<Response>
 where
-    F: Fn() -> NotionApiClientResult<Response>,
+    F: Fn() -> Result<Response>,
     S: Fn(Duration),
 {
     let RetryParameters {
@@ -151,7 +142,7 @@ where
         retries += 1;
 
         match result.unwrap_err() {
-            NotionApiClientError::RateLimit(duration) => {
+            Error::RateLimit(duration) => {
                 tracing::warn!(
                     "Sleeping for {:?} before retrying Notion API request",
                     duration
@@ -172,9 +163,9 @@ where
 }
 
 pub fn update_database_entry(
-    client: &NotionApiClient,
+    client: &Client,
     parameters: UpdateDatabaseEntryParameters,
-) -> NotionApiClientResult<Response> {
+) -> Result<Response> {
     let UpdateDatabaseEntryParameters {
         entry_id,
         properties,
@@ -196,9 +187,9 @@ pub fn update_database_entry(
 // and respecting the Retry-After response header value,
 // which is set as an integer number of seconds (in decimal).
 // See more for details https://developers.notion.com/reference/request-limits
-fn api_client_error(err: ureq::Error) -> NotionApiClientError {
+fn api_client_error(err: ureq::Error) -> Error {
     match err {
-        ureq::Error::Transport(err) => NotionApiClientError::Transport(err.to_string()),
+        ureq::Error::Transport(err) => Error::Transport(err.to_string()),
         ureq::Error::Status(429, response) => {
             let retry_after = response.header("Retry-After").unwrap_or_else(|| {
                 tracing::warn!(
@@ -217,9 +208,9 @@ fn api_client_error(err: ureq::Error) -> NotionApiClientError {
             let duration = Duration::from_secs_f64(seconds);
             tracing::warn!("Notion API request rate limited for {:?}", duration);
 
-            NotionApiClientError::RateLimit(duration)
+            Error::RateLimit(duration)
         }
-        ureq::Error::Status(code, _) => NotionApiClientError::Status(code),
+        ureq::Error::Status(code, _) => Error::Status(code),
     }
 }
 
@@ -258,7 +249,7 @@ mod tests {
             then.status(200);
         });
 
-        let client = NotionApiClient::new(NotionApiClientParameters {
+        let client = Client::new(NotionApiClientParameters {
             base_url_override: Some(base_url),
             api_key: "test_api_key".to_string(),
         });
@@ -293,7 +284,7 @@ mod tests {
             then.status(200);
         });
 
-        let client = NotionApiClient::new(NotionApiClientParameters {
+        let client = Client::new(NotionApiClientParameters {
             base_url_override: Some(base_url),
             api_key: "test_api_key".to_string(),
         });
@@ -322,7 +313,7 @@ mod tests {
             then.status(200);
         });
 
-        let client = NotionApiClient::new(NotionApiClientParameters {
+        let client = Client::new(NotionApiClientParameters {
             base_url_override: Some(base_url),
             api_key: "test_api_key".to_string(),
         });
@@ -363,7 +354,7 @@ mod tests {
             then.status(200);
         });
 
-        let client = NotionApiClient::new(NotionApiClientParameters {
+        let client = Client::new(NotionApiClientParameters {
             base_url_override: Some(base_url),
             api_key: "test_api_key".to_string(),
         });
