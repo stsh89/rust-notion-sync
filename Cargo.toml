@@ -1,0 +1,14 @@
+[package]
+name = "rust-notion-sync"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde_json = { version = "1.0.133" }
+thiserror = { version = "2.0.3" }
+tracing = { version = "0.1.40" }
+ureq = { version = "2.10.1", features = ["json"] }
+
+[dev-dependencies]
+anyhow = { version = "1.0.93" }
+httpmock = { version = "0.7.0" }
