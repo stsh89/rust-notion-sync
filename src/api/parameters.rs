@@ -18,11 +18,6 @@ pub struct QueryDatabaseParameters<'a> {
     pub start_cursor: Option<&'a str>,
 }
 
-#[derive(Default)]
-pub struct RetryParameters<F> {
-    pub custom_sleep: Option<F>,
-}
-
 pub struct UpdateDatabaseEntryParameters<'a> {
     pub entry_id: &'a str,
     pub properties: Json,

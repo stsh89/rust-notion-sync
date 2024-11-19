@@ -3,7 +3,7 @@ mod headers;
 mod parameters;
 
 use headers::{SetAuthorizationHeader, SetDefaultHeaders};
-use std::{num::NonZeroU32, thread, time::Duration};
+use std::{num::NonZeroU32, time::Duration};
 use ureq::{Agent, AgentBuilder, Response};
 
 pub use failure::*;
@@ -114,15 +114,10 @@ pub fn query_database(client: &Client, parameters: QueryDatabaseParameters) -> R
     Ok(response)
 }
 
-pub fn send_with_retries<F, S>(parameters: RetryParameters<S>, f: F) -> Result<Response>
-where
-    F: Fn() -> Result<Response>,
-    S: Fn(Duration),
-{
-    let RetryParameters {
-        custom_sleep: sleep_override,
-    } = parameters;
-
+pub fn send_with_retries(
+    f: impl Fn() -> Result<Response>,
+    sleep: impl Fn(Duration),
+) -> Result<Response> {
     let max_retries = 3;
     let mut retries = 0;
 
@@ -151,10 +146,7 @@ where
                     duration
                 );
 
-                match &sleep_override {
-                    Some(sleep) => sleep(duration),
-                    None => thread::sleep(duration),
-                };
+                sleep(duration);
             }
             err => {
                 tracing::warn!("Not retryable Notion API request error: {}", err);
@@ -189,6 +181,8 @@ pub fn update_database_entry(
 
 #[cfg(test)]
 mod tests {
+    use std::sync::atomic::{AtomicU8, Ordering};
+
     use super::*;
     use anyhow::Result;
     use httpmock::{
@@ -303,6 +297,53 @@ mod tests {
 
         mock.assert();
         assert_eq!(result?.status(), 200);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_send_with_reries_returns_status_200() -> Result<()> {
+        let mock_notion_server = MockServer::start();
+        let base_url = mock_notion_server.base_url();
+        let database_id = "test_database_id";
+
+        let mock = mock_notion_server.mock(|when, then| {
+            when.path("/databases/test_database_id/query")
+                .method(POST)
+                .header("Authorization", "Bearer test_api_key")
+                .header("Content-Type", "application/json")
+                .header("Notion-Version", "2022-06-28");
+
+            then.status(200);
+        });
+
+        let client = Client::new(ClientParameters {
+            base_url_override: Some(base_url),
+            api_key: "test_api_key".to_string(),
+        });
+
+        let sleep_count = AtomicU8::new(0);
+
+        let result = send_with_retries(
+            || {
+                query_database(
+                    &client,
+                    QueryDatabaseParameters {
+                        database_id,
+                        page_size: None,
+                        start_cursor: None,
+                        filter: None,
+                    },
+                )
+            },
+            |_duration| {
+                sleep_count.fetch_add(1, Ordering::SeqCst);
+            },
+        );
+
+        mock.assert();
+        assert_eq!(result?.status(), 200);
+        assert_eq!(sleep_count.load(Ordering::SeqCst), 0);
 
         Ok(())
     }
