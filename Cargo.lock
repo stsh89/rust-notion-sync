@@ -1205,18 +1205,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rust-notion-sync"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "httpmock",
- "serde_json",
- "thiserror 2.0.3",
- "tracing",
- "ureq",
-]
-
-[[package]]
 name = "rustc-demangle"
 version = "0.1.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1272,6 +1260,18 @@ name = "rustversion"
 version = "1.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0e819f2bc632f285be6d7cd36e25940d45b2391dd6d9b939e79de557f7014248"
+
+[[package]]
+name = "rusty-notion"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "httpmock",
+ "serde_json",
+ "thiserror 2.0.3",
+ "tracing",
+ "ureq",
+]
 
 [[package]]
 name = "ryu"
