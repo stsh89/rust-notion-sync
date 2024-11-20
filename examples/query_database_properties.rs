@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::Parser;
-use rusty_notion::api::{self, Client, ClientParameters};
+use rusty_notion::api::{self, Client};
 use serde_json::Value as Json;
 
 #[derive(Parser)]
@@ -18,11 +18,7 @@ fn main() -> Result<()> {
         database_id,
     } = Cli::parse();
 
-    let client = Client::new(ClientParameters {
-        api_key,
-        base_url_override: None,
-    });
-
+    let client = Client::new(api_key);
     let response = api::query_database_properties(&client, &database_id)?;
 
     println!("StatusCode : {}", response.status());

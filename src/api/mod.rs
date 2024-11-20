@@ -18,19 +18,15 @@ pub struct Client {
 }
 
 impl Client {
-    pub fn new(parameters: ClientParameters) -> Self {
-        let ClientParameters {
-            api_key,
-            base_url_override,
-        } = parameters;
+    pub fn base_url(self, base_url: String) -> Self {
+        Self { base_url, ..self }
+    }
 
-        let inner = AgentBuilder::new().build();
-        let base_url = base_url_override.unwrap_or_else(|| "https://api.notion.com/v1".to_string());
-
+    pub fn new(api_key: String) -> Self {
         Self {
             api_key,
-            inner,
-            base_url,
+            inner: AgentBuilder::new().build(),
+            base_url: "https://api.notion.com/v1".to_string(),
         }
     }
 }
@@ -216,10 +212,7 @@ mod tests {
             then.status(200);
         });
 
-        let client = Client::new(ClientParameters {
-            base_url_override: Some(base_url),
-            api_key: "test_api_key".to_string(),
-        });
+        let client = Client::new("test_api_key".to_string()).base_url(base_url);
 
         let result = create_database_entry(
             &client,
@@ -251,10 +244,7 @@ mod tests {
             then.status(200);
         });
 
-        let client = Client::new(ClientParameters {
-            base_url_override: Some(base_url),
-            api_key: "test_api_key".to_string(),
-        });
+        let client = Client::new("test_api_key".to_string()).base_url(base_url);
 
         let result = query_database_properties(&client, database_id);
 
@@ -280,10 +270,7 @@ mod tests {
             then.status(200);
         });
 
-        let client = Client::new(ClientParameters {
-            base_url_override: Some(base_url),
-            api_key: "test_api_key".to_string(),
-        });
+        let client = Client::new("test_api_key".to_string()).base_url(base_url);
 
         let result = query_database(
             &client,
@@ -317,10 +304,7 @@ mod tests {
             then.status(200);
         });
 
-        let client = Client::new(ClientParameters {
-            base_url_override: Some(base_url),
-            api_key: "test_api_key".to_string(),
-        });
+        let client = Client::new("test_api_key".to_string()).base_url(base_url);
 
         let sleep_count = AtomicU8::new(0);
 
@@ -368,10 +352,7 @@ mod tests {
             then.status(200);
         });
 
-        let client = Client::new(ClientParameters {
-            base_url_override: Some(base_url),
-            api_key: "test_api_key".to_string(),
-        });
+        let client = Client::new("test_api_key".to_string()).base_url(base_url);
 
         let result = update_database_entry(
             &client,
