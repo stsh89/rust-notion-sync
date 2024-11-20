@@ -6,11 +6,6 @@ pub struct CreateDatabaseEntryParameters<'a> {
     pub properties: Json,
 }
 
-pub struct ClientParameters {
-    pub api_key: String,
-    pub base_url_override: Option<String>,
-}
-
 pub struct QueryDatabaseParameters<'a> {
     pub database_id: &'a str,
     pub filter: Option<Json>,
