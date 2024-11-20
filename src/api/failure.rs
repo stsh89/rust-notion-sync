@@ -2,6 +2,12 @@ use std::time::Duration;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    #[error("Notion API authorization failure: {0}")]
+    Authorization(String),
+
+    #[error("Bad Notion API request: {0}")]
+    BadRequest(String),
+
     #[error("Notion API request failure. Please retry in {0:?}")]
     RateLimit(Duration),
 
@@ -20,6 +26,12 @@ impl From<ureq::Error> for Error {
     fn from(err: ureq::Error) -> Self {
         match err {
             ureq::Error::Transport(err) => Error::Transport(err.to_string()),
+            ureq::Error::Status(400, response) => {
+                Error::BadRequest(response.into_string().unwrap_or_default())
+            }
+            ureq::Error::Status(401, response) => {
+                Error::Authorization(response.into_string().unwrap_or_default())
+            }
             ureq::Error::Status(429, response) => {
                 let retry_after = response.header("Retry-After").unwrap_or_else(|| {
                     tracing::warn!(

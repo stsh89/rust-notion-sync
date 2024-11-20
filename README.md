@@ -13,6 +13,12 @@ List of implemented API methods:
 
 Note: API calls should be wrapped into `send_with_retries` function in order to handle API rate limits properly.
 
+## Examples
+
+```
+     cargo run --example query_database_properties -- --help
+```
+
 ## Related links
 
 * [Notion API reference](https://developers.notion.com/reference).
