@@ -135,20 +135,21 @@ pub fn send_with_retries(
 
         retries += 1;
 
-        match result.unwrap_err() {
-            Error::RateLimit(duration) => {
-                tracing::warn!(
-                    "Sleeping for {:?} before retrying Notion API request",
-                    duration
-                );
+        let err = result.unwrap_err();
 
-                sleep(duration);
-            }
-            err => {
-                tracing::warn!("Not retryable Notion API request error: {}", err);
+        if !err.is_rate_limit() {
+            tracing::warn!("Not retryable Notion API request error: {}", err);
 
-                return Err(err);
-            }
+            return Err(err);
+        }
+
+        if let Some(duration) = err.retry_after() {
+            tracing::warn!(
+                "Sleeping for {:?} before retrying Notion API request",
+                duration
+            );
+
+            sleep(duration);
         }
     }
 }
